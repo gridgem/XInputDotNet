@@ -5,12 +5,12 @@ namespace XInputDotNetPure
 {
     class Imports
     {
-        internal const string DLLName = "XInputInterface";
+        internal const string DLLName = "xinput1_3";
 
+        [DllImport(DLLName, EntryPoint = "#100")]
+        public static extern uint XInputGetStateEx(uint playerIndex, out GamePadState.RawState state);
         [DllImport(DLLName)]
-        public static extern uint XInputGamePadGetState(uint playerIndex, out GamePadState.RawState state);
-        [DllImport(DLLName)]
-        public static extern void XInputGamePadSetState(uint playerIndex, float leftMotor, float rightMotor);
+        public static extern uint XInputSetState(uint playerIndex, ref XInputVibrationState vib);
     }
 
     public enum ButtonState
@@ -343,13 +343,23 @@ namespace XInputDotNetPure
         public static GamePadState GetState(PlayerIndex playerIndex, GamePadDeadZone deadZone)
         {
             GamePadState.RawState state;
-            uint result = Imports.XInputGamePadGetState((uint)playerIndex, out state);
+            uint result = Imports.XInputGetStateEx((uint)playerIndex, out state);
             return new GamePadState(result == Utils.Success, state, deadZone);
         }
 
         public static void SetVibration(PlayerIndex playerIndex, float leftMotor, float rightMotor)
         {
-            Imports.XInputGamePadSetState((uint)playerIndex, leftMotor, rightMotor);
+            XInputVibrationState vib = new XInputVibrationState();
+            vib.LeftMotorSpeed = (ushort)(leftMotor * 65535);
+            vib.RightMotorSpeed = (ushort)(rightMotor * 65535);
+            Imports.XInputSetState((uint)playerIndex, ref vib);
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XInputVibrationState
+    {
+        public ushort LeftMotorSpeed;
+        public ushort RightMotorSpeed;
     }
 }
